@@ -1,0 +1,5 @@
+.idea
+*.pyc
+/analyse/TSNE_Draw/featureList/
+*.slurm
+checkpoints_tune/
