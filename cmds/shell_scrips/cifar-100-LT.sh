@@ -10,6 +10,8 @@ case $key in
     -w|--workers) workers="$2"; shift; shift ;;
     -g|--GPU_NUM) GPU_NUM=("$2"); shift; shift ;;
     --lr) pretrain_lr=("$2"); shift; shift ;;
+    --only_finetuning) only_finetuning=("$2"); shift; shift ;;
+    --test_only) test_only=("$2"); shift; shift ;;
     --batch_size) batch_size=("$2"); shift; shift ;;
     --temp) pretrain_temp=("$2"); shift; shift ;;
     --few_shot_only) few_shot_only=("$2"); shift; shift ;;
@@ -41,6 +43,8 @@ prune=${prune:-False}
 prune_percent=${prune_percent:-0.7}
 prune_dual_bn=${prune_dual_bn:-False}
 random_prune_percent=${random_prune_percent:-0}
+only_finetuning=${only_finetuning:-False}
+test_only=${test_only:-False}
 
 pretrain_name=res18_cifar100_scheduling_sgd_temp${pretrain_temp}_wd1e-4_lr${pretrain_lr}_b${batch_size}_o128_twolayerProj_epoch${pretrain_epochs}_${pretrain_split}_newNT_s${seed}
 
@@ -57,6 +61,7 @@ then
     pretrain_name="${pretrain_name}RandomP${random_prune_percent}"
   fi
 fi
+
 
 
 save_dir=checkpoints_cifar100
@@ -92,6 +97,10 @@ then
   cmd_full="${cmd_full} --bnNameCnt 0"
 fi
 
+if [[ ${test_only} == "True" ]]
+then
+  cmd_full="${cmd_full} --test_only"
+fi
 
 tuneLr=30
 index_split="$(echo ${pretrain_split} | grep -P 'split\K([0-9])' -o)"
@@ -106,13 +115,22 @@ then
   cmd_few_shot="${cmd_few_shot} --bnNameCnt 0"
 fi
 
+if [[ ${test_only} == "True" ]]
+then
+  cmd_few_shot="${cmd_few_shot} --test_only"
+fi
+
+
 if [ ${few_shot_only} == "False" ]
 then
   mkdir -p ${save_dir}/${pretrain_name}
 
-#  echo ${cmd} >> ${save_dir}/${pretrain_name}/bash_log.txt
-#  echo ${cmd}
-#  ${cmd}
+  if [ ${only_finetuning} == "False" ]
+  then
+    echo ${cmd} >> ${save_dir}/${pretrain_name}/bash_log.txt
+    echo ${cmd}
+    ${cmd}
+  fi
 
   echo ${cmd_full} >> ${save_dir}/${pretrain_name}/bash_log.txt
   echo ${cmd_full}

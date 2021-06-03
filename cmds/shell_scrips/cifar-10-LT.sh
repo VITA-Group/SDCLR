@@ -13,6 +13,7 @@ case $key in
     --batch_size) batch_size=("$2"); shift; shift ;;
     --temp) pretrain_temp=("$2"); shift; shift ;;
     --only_finetuning) only_finetuning=("$2"); shift; shift ;;
+    --test_only) test_only=("$2"); shift; shift ;;
     --few_shot_only) few_shot_only=("$2"); shift; shift ;;
     --few_shot_lr) few_shot_lr=("$2"); shift; shift ;;
     --few_shot_epochs) few_shot_epochs=("$2"); shift; shift ;;
@@ -30,6 +31,7 @@ workers=${workers:-5}
 batch_size=${batch_size:-512}
 few_shot_only=${few_shot_only:-False}
 only_finetuning=${only_finetuning:-False}
+test_only=${test_only:-False}
 seed=10
 
 port=${port:-4833}
@@ -81,6 +83,10 @@ then
   cmd_full="${cmd_full} --bnNameCnt 0"
 fi
 
+if [[ ${test_only} == "True" ]]
+then
+  cmd_full="${cmd_full} --test_only"
+fi
 
 tuneLr=30
 index_split="$(echo ${pretrain_split} | grep -P 'split\K([0-9])' -o)"
@@ -93,6 +99,11 @@ cmd_few_shot="python train_cifar.py ${pretrain_name}__${train_split1}_f2layer4_d
  if [[ ${prune_dual_bn} == "True" ]]
 then
   cmd_few_shot="${cmd_few_shot} --bnNameCnt 0"
+fi
+
+if [[ ${test_only} == "True" ]]
+then
+  cmd_few_shot="${cmd_few_shot} --test_only"
 fi
 
 

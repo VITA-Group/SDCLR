@@ -168,9 +168,9 @@ def autoSummaryExpRes(saveDir, exps, prefix, dataset='cifar10',
         elif dataset == 'cifar100':
             currentStatistics = getStatistics_cifar100('cifar100_imbSub_with_subsets/cifar100_split{}_D_i.npy'.format(index_split))
         elif dataset == 'Imagenet':
-            currentStatistics = np.array(getStatisticsFromTxt('split/ImageNet_LT/imageNet_SC_LT.txt'))
+            currentStatistics = np.array(getStatisticsFromTxt('split/ImageNet_LT/imageNet_LT_exp_train.txt'))
         elif dataset == 'Imagenet-100':
-            currentStatistics = np.array(getStatisticsFromTxt('split/imagenet-100/imageNet_100_LT_train_{}.txt'.format(index_split), num_class=100))
+            currentStatistics = np.array(getStatisticsFromTxt('split/imagenet-100/imageNet_100_LT_train.txt', num_class=100))
         else:
             assert False
 
@@ -191,8 +191,6 @@ def autoSummaryExpRes(saveDir, exps, prefix, dataset='cifar10',
         idxsMajor = sortIdx[len(currentStatistics) // 3 * 2:]
         idxsModerate = sortIdx[len(currentStatistics) // 3 * 1: len(currentStatistics) // 3 * 2]
         idxsMinor = sortIdx[: len(currentStatistics) // 3 * 1]
-        idxsTop5 = sortIdx[-5:]
-        idxsLow5 = sortIdx[:5]
 
         # set_trace()
 
@@ -205,8 +203,6 @@ def autoSummaryExpRes(saveDir, exps, prefix, dataset='cifar10',
         majorAcc = np.mean(classWiseAcc[idxsMajor])
         moderateAcc = np.mean(classWiseAcc[idxsModerate])
         minorAcc = np.mean(classWiseAcc[idxsMinor])
-        top5Acc = np.mean(classWiseAcc[idxsTop5])
-        low5Acc = np.mean(classWiseAcc[idxsLow5])
 
         if getInfo == "Imagenet" or getInfo == "Imagenet-100" or getInfo == "Places":
             idxsMany = np.nonzero(currentStatistics > 100)[0]
@@ -220,8 +216,6 @@ def autoSummaryExpRes(saveDir, exps, prefix, dataset='cifar10',
         majorAccList.append(majorAcc)
         moderateAccList.append(moderateAcc)
         minorAccList.append(minorAcc)
-        top5AccList.append(top5Acc)
-        low5AccList.append(low5Acc)
         # balancenessList.append(imbalance_metric(classWiseAcc / 100, sigma=1))
         # print("classWiseAcc is {}".format(classWiseAcc))
         fullVarianceList.append(np.std(classWiseAcc / 100))
@@ -266,8 +260,6 @@ def autoSummaryExpRes(saveDir, exps, prefix, dataset='cifar10',
                 print("{}: major acc is {:.02f}+-{:.02f}".format(prefix, np.mean(majorAccList), np.std(majorAccList)))
                 print("{}: moderate acc is {:.02f}+-{:.02f}".format(prefix, np.mean(moderateAccList), np.std(moderateAccList)))
                 print("{}: minor acc is {:.02f}+-{:.02f}".format(prefix, np.mean(minorAccList), np.std(minorAccList)))
-                print("{}: top5 acc is {:.02f}+-{:.02f}".format(prefix, np.mean(top5AccList), np.std(top5AccList)))
-                print("{}: low5 acc is {:.02f}+-{:.02f}".format(prefix, np.mean(low5AccList), np.std(low5AccList)))
 
 
 def summaryCifar10(longTailDataset=True, prune=False, fewShot=False):
@@ -328,19 +320,46 @@ def summaryCifar100(longTailDataset=True, prune=False, fewShot=False):
     autoSummaryExpRes(saveDir, exps, "cifar100 Dataset:{} prune:{} {}".format(dataset, prune, "fewShot" if fewShot else "fullShot"), dataset='cifar100')
 
 
-
-def summaryImagnet_LT_sgdSimCLRBest():
+def summaryIN100(longTailDataset=True, prune=False, fewShot=False):
     saveDir = "checkpoints_imagenet_tune"
-    #
-    # exp_name = "imagenet_LT_res50_scheduling_lars_lr7.0_temp0.2_epoch200_batch512__lr3.0_wd0_epoch30_b512_d10d20"
-    # exp_name = "imagenet_LT0_res50_scheduling_lars_lr7.0_temp0.2_epoch200_batch512__lr3.0_wd0_epoch30_b512_d10d20"
-    # exp_name = "imagenet_LT_res50_scheduling_lars_lr7.0_temp0.2_epoch200_batch512__lr3.0_wd0_epoch30_b512_d10d20"
-    exp_name = "imageNet_LT0_exp_res18_scheduling_sgd_lr0.5_temp0.2_epoch200_batch512_weakerAug__lr3.0_wd0_epoch30_b512_d10d20"
+
+    if longTailDataset:
+        exp_name = "imageNet_100_LT_train_res50_scheduling_sgd_lr0.5_temp0.2_epoch500_batch256"
+    else:
+        assert not prune
+        exp_name = "imageNet_100_BL_train_res50_scheduling_sgd_lr0.5_temp0.2_epoch500_batch256"
+
+    if prune:
+        exp_name = "imageNet_100_LT_train_res50_scheduling_sgd_lr0.5_temp0.3_epoch500_batch256_pruneP0.3DualBN"
+
+    if fewShot:
+        exp_name = "{}__{}".format(exp_name, "imageNet_100_sub_balance_train_0.01_lr30_fix2layer4_wd0_epoch30_b512_d10d20")
+    else:
+        exp_name = "{}__{}".format(exp_name, "lr30_wd0_epoch30_b512_d10d20_s1")
 
     exps = [[exp_name, 0]]
     # splitSystem = "imbSub" if "SC" not in exp_name else "imbSub_SC"
     splitSystem = "imbSub"
-    autoSummaryExpRes(saveDir, exps, "{} ".format(splitSystem), getInfo='Imagenet', dataset='Imagenet', splitSystem=splitSystem)
+    autoSummaryExpRes(saveDir, exps, "{} ".format(splitSystem), getInfo='Imagenet-100', dataset='Imagenet-100')
+
+
+def summaryIN(longTailDataset=True, fewShot=False):
+    saveDir = "checkpoints_imagenet_tune"
+
+    if longTailDataset:
+        exp_name = "imageNet_LT_exp_train_res50_scheduling_sgd_lr0.5_temp0.2_epoch500_batch256"
+    else:
+        exp_name = "imageNet_BL_exp_train_res50_scheduling_sgd_lr0.5_temp0.2_epoch500_batch256"
+
+    if fewShot:
+        exp_name = "{}__{}".format(exp_name, "imageNet_sub_balance_train_0.01_lr30_fix2layer4_wd0_epoch30_b512_d10d20")
+    else:
+        exp_name = "{}__{}".format(exp_name, "lr30_wd0_epoch30_b512_d10d20")
+
+    exps = [[exp_name, 0]]
+    # splitSystem = "imbSub" if "SC" not in exp_name else "imbSub_SC"
+    splitSystem = "imbSub"
+    autoSummaryExpRes(saveDir, exps, "{} ".format(splitSystem), getInfo='Imagenet', dataset='Imagenet')
 
 
 if __name__ == '__main__':
@@ -349,9 +368,9 @@ if __name__ == '__main__':
         summaryCifar10(args.LT, args.prune, args.fewShot)
     elif args.dataset == "cifar100":
         summaryCifar100(args.LT, args.prune, args.fewShot)
-    elif args.dataset == "ImageNet-100":
-        pass
-    elif args.dataset == "ImageNet-exp":
-        pass
+    elif args.dataset == "imagenet100":
+        summaryIN100(args.LT, args.prune, args.fewShot)
+    elif args.dataset == "imagenet":
+        summaryIN(args.LT, args.fewShot)
     else:
-        raise ValueError("dataset of {} is not supported, supported datasets includes [cifar10, cifar100, ImageNet-100, ImageNet-exp]".format(args.dataset))
+        raise ValueError("dataset of {} is not supported, supported datasets includes [cifar10, cifar100, imagenet100, imagenet]".format(args.dataset))
