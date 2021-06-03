@@ -33,7 +33,7 @@ pip install opencv-python
 conda install -c conda-forge scikit-learn matplotlib
 ```
 
-# Details about and Imagenet-100-LT Imagenet-LT-exp
+## Details about and Imagenet-100-LT Imagenet-LT-exp
 [Imagenet-100-LT sampling list](split/imagenet-100/imageNet_100_LT_train.txt)
 
 [Imagenet-LT-exp sampling list](split/ImageNet_LT/imageNet_LT_exp_train.txt)
